@@ -1,6 +1,8 @@
-# This repository includes two parts:
+## Replication package used in the paper "Concretely Mapped Symbolic Memory Locations for Memory Error Detection" (Under review of IEEE TSE)
 
-## Part 1: the benchmarks and running scripts used in the evaluation part of the paper
+## This repository includes two parts:
+
+## Part 1: The benchmarks and running scripts used in the evaluation
 
 * See more details in the folder [experiments](experiments)
 
