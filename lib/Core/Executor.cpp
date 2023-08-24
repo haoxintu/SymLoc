@@ -844,8 +844,6 @@ void Executor::branch(ExecutionState &state,
   } else {
     stats::forks += N-1;
 
-  //printf("THX here is in the branch function!\n");
-
     // XXX do proper balance or keep random?
     result.push_back(&state);
     for (unsigned i=1; i<N; ++i) {
@@ -912,18 +910,13 @@ void Executor::branch(ExecutionState &state,
 
 // *Haoxin start
 const Array* scan2(ref<Expr> e, std::set<std::string> &symNameList) {
-    //std::set<std::string> symNameList;
     const Array *array;
     Expr *ep = e.get();
-    //ep->dump();
         for (unsigned i=0; i<ep->getNumKids(); i++)
           scan2(ep->getKid(i), symNameList);
         if (const ReadExpr *re = dyn_cast<ReadExpr>(e)) {
-          //printf("In execution array->name = %s\n", re->updates.root->name.c_str());
           symNameList.insert(re->updates.root->name);
           array = re->updates.root;
-          //break;
-          //re->dump();
         }
         return array;
 }
@@ -955,8 +948,6 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
   std::map< ExecutionState*, std::vector<SeedInfo> >::iterator it =
     seedMap.find(&current);
   bool isSeeding = it != seedMap.end();
-  //printf("THX here is in the fork function!\n");
-  //condition->dump();
   if (!isSeeding && !isa<ConstantExpr>(condition) &&
       (MaxStaticForkPct!=1. || MaxStaticSolvePct != 1. ||
        MaxStaticCPForkPct!=1. || MaxStaticCPSolvePct != 1.) &&
@@ -979,8 +970,6 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
       bool success = solver->getValue(current, condition, value);
       assert(success && "FIXME: Unhandled solver failure");
       (void) success;
-      //condition->dump();
-      //value->dump();
       addConstraint(current, EqExpr::create(value, condition));
       condition = value;
     }
@@ -1038,12 +1027,10 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
         TimerStatIncrementer timer(stats::forkTime);
         if (theRNG.getBool()) {
           addConstraint(current, condition);
-          printf("THX condition true:");
           condition->dump();
           res = Solver::True;
         } else {
           addConstraint(current, Expr::createIsZero(condition));
-          printf("THX condition false:");
           Expr::createIsZero(condition)->dump();
           res = Solver::False;
         }
@@ -1111,7 +1098,6 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
 
     ++stats::forks;
 
-    //printf("THX here is in the fork function!\n");
     falseState = trueState->branch();
     addedStates.push_back(falseState);
 
@@ -1183,27 +1169,17 @@ Executor::fork(ExecutionState &current, ref<Expr> condition, bool isInternal) {
         iter_set = nameList.find(key);
         if (iter_set != nameList.end() && hasSymbolicMallocVariable(condition, mmm)){
             sym_name = key;
-            //printf("\n 1 sym_name in find = %s\n", sym_name.c_str());
             isSymbolicAddress = 1;
         }
-        //printf("In our strategy --- key = %s,\t", key.c_str());
-        //printf("value = (mo-address= %d, os)\n", iter->second.first->address);
-        //printf("value = (mo->address= %d, os)\n", iter->second.first->address);
     }
     if (isSymbolicAddress && hasSymbolicMallocVariable(condition, mmm)){ // handle symbolic address and aviod normal symbolic variable by comand
         ;
-        printf("OK!!!\n");
-        //printf("THX true condition: ");
-        //condition->dump();
-        //printf("THX false condition: ");
-        //Expr::createIsZero(condition)->dump();
         // add stacktrace
         std::string MsgString;
         llvm::raw_string_ostream msg(MsgString);
         msg << "\nTHX : Stack from Forking point: \n";
         current.dumpStack(msg);
         current.mallocLocation[sym_name].push_back(msg.str());
-        //current.mallocLocation.insert(std::pair<std::string, std::vector<std::string>>(sym_name, location));
     }
   }
     addConstraint(*trueState, condition);
@@ -1257,7 +1233,6 @@ void Executor::addConstraint(ExecutionState &state, ref<Expr> condition) {
 const Cell& Executor::eval(KInstruction *ki, unsigned index,
                            ExecutionState &state) const {
   assert(index < ki->inst->getNumOperands());
-  //printf("index = %d \t ki->inst->getNumOperands = %d \t vnumber = %d \n", index, ki->inst->getNumOperands(), ki->operands[index]);
   int vnumber = ki->operands[index];
 
   assert(vnumber != -1 &&
@@ -1287,10 +1262,6 @@ void Executor::bindArgument(KFunction *kf, unsigned index,
 ref<Expr> Executor::toUnique(const ExecutionState &state,
                              ref<Expr> &e) {
   ref<Expr> result = e;
-  //if (result.get() == NULL)
-  //  return NULL;
-    //terminateStateOn(&state, "meet a null pointer when excuting toUnique");
-    //terminateStateOnExit(state);
   if (!isa<ConstantExpr>(e.get())) {
     ref<ConstantExpr> value;
     bool isTrue = false;
@@ -1429,23 +1400,6 @@ void Executor::stepInstruction(ExecutionState &state) {
   state.prevPC = state.pc;
   ++state.pc;
 
-  /*
-  // THX add for testing the MemSight
-  //std::string test_name = (*(state.pc)).info->file;
-  // printf("Now testing package %s \n", test_name.c_str());
-  if (stats::instructions == 200000000) { // common
-  //if (stats::instructions == 20794661) { // basename
-  //if (stats::instructions == 740772634){ // dircolors
-  //if (stats::instructions == 209953760){ // factor
-  //if (stats::instructions == 1560875063){ // ln
-  //if (stats::instructions == 112411438){ // od
-  //if (stats::instructions == 44348415){ // seq
-   //printf("Now testing package %s \n", test_name.c_str());
-    printf("max instruction number hit!!!\n");
-    haltExecution = true;
-    //exit(1);
-  }
-  */
   if (stats::instructions == MaxInstructions)
     haltExecution = true;
 }
@@ -1478,7 +1432,6 @@ void Executor::executeCall(ExecutionState &state,
                            Function *f,
                            std::vector< ref<Expr> > &arguments) {
   //new added test function
-  //printf("No.%d executionCall in Executor::executeCall\n", num_ec);
   num_ec += 1;
   Instruction *i = ki->inst;
   // check Instrinsic, =0 if not dbg_declare, dbg_value, dbg_addr, dgb_label
@@ -1489,18 +1442,8 @@ void Executor::executeCall(ExecutionState &state,
     switch(f->getIntrinsicID()) {
     case Intrinsic::not_intrinsic: {
       // state may be destroyed by this call, cannot touch
-      //printf("call external function here, file name = %s\n", ki->info->file.c_str());
       callExternalFunction(state, ki, f, arguments);
 
-      /*
-      std::string str("malloc");
-      std::string str_from_function = f->getName().str().c_str();
-      if (str_from_function.compare(str) == 0){
-        ret = 1;
-        printf("      function name of callExternalFunction: %s\n", f->getName().str().c_str());
-      }
-      */
-      //printf("callExternalFunction executed in function executeCall!\n");
       break;
     // llvm.fabs return the absolute value of the operand
      }
@@ -1613,7 +1556,6 @@ void Executor::executeCall(ExecutionState &state,
     unsigned callingArgs = arguments.size();
     unsigned funcArgs = f->arg_size();
     if (!f->isVarArg()) {
-      //printf("1\n");
       if (callingArgs > funcArgs) {
         klee_warning_once(f, "calling %s with extra arguments.",
                           f->getName().data());
@@ -1623,7 +1565,6 @@ void Executor::executeCall(ExecutionState &state,
         return ;
       }
     } else { // start from here if this function takes variable arguments, not easy to reach this path?
-      //printf("2\n");
       Expr::Width WordSize = Context::get().getPointerWidth();
 
       if (callingArgs < funcArgs) {
@@ -1708,15 +1649,12 @@ void Executor::executeCall(ExecutionState &state,
           }
         }
       }
-      //printf("3 not execute here as well\n");
     }
 
     unsigned numFormals = f->arg_size();
-    //printf("numFormals: %d\n", numFormals);
     for (unsigned i=0; i<numFormals; ++i)
       bindArgument(kf, i, state, arguments[i]);
   }
-  //printf("executeCall returns\n");
   return ;
 }
 
@@ -1786,7 +1724,6 @@ const Array* scan2(ref<Expr> e, std::set<std::string> &symNameList) {
         for (unsigned i=0; i<ep->getNumKids(); i++)
           scan2(ep->getKid(i), symNameList);
         if (const ReadExpr *re = dyn_cast<ReadExpr>(e)) {
-          //printf("In execution array->name = %s\n", re->updates.root->name.c_str());
           symNameList.insert(re->updates.root->name);
           array = re->updates.root;
           //break;
@@ -1799,28 +1736,12 @@ const Array* scan2(ref<Expr> e, std::set<std::string> &symNameList) {
 //
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   //new added test code
-  /*
-  std::vector<StackFrame> stack_ty_test = state.stack;
-  printf("Here are informations in StackFrame No.%d: \n", i);
-  printf("The size of vector<StackFrame> = %d\n", (int)stack_ty_test.size());
-  for (auto s : stack_ty_test){
-    printf("    The information in vector<StackFrame>:\n");
-    printf("        StackFrame KFunction:\n");
-    printf("            numArgs = %d\n", s.kf->numArgs);
-    printf("            numRegisters = %d\n", s.kf->numRegisters);
-    printf("            numInstructions = %d\n", s.kf->numInstructions);
-  }
-  printf("\n");
-  i += 1;
-  */
   static int callMallocFunction = 0;
   //int callBitcast = 0;
   Instruction *i = ki->inst;
   switch (i->getOpcode()) {
     // Control flow
   case Instruction::Ret: {
-    //printf("The content in Instruction::Ret: \n");
-    //printf(" what's this?\n");
     ReturnInst *ri = cast<ReturnInst>(i);
     KInstIterator kcaller = state.stack.back().caller;
     Instruction *caller = kcaller ? kcaller->inst : 0;
@@ -1828,9 +1749,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     ref<Expr> result = ConstantExpr::alloc(0, Expr::Bool);
 
     if (!isVoidReturn) {
-      //printf("This is not a void return.\n");
       result = eval(ki, 0, state).value;
-      //printf("result value is : %d\n", result);
     }
 
     if (state.stack.size() <= 1) { //last StackFrame
@@ -1840,16 +1759,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
       //as the return value has already saved in results, here delete the current StackFrame
     // Here analyze the contents in StackFrame
       StackFrame &temp_stack_last = state.stack.back();
-      /*
-      printf("The following contents are callee's StackFrame before pop it:\n"); // useful information of callee are all in stack already
-      printf("  caller is \n");
-      printf("  kf : %s\n", temp_stack_last.kf->function->getName().str().c_str());
-      printf("      numRegisters = %d\n", temp_stack_last.kf->numRegisters);
-      printf("      numArgs = %d\n", temp_stack_last.kf->numArgs);
-      printf("      getArgRegister = %d\n", temp_stack_last.kf->getArgRegister(0));
-      printf("  allocas : \n");
-      printf("      size = %d\n", (int)temp_stack_last.allocas.size());
-      */
       std::vector<int> vecArgIndex;
       std::vector<int> vecLocIndex;
       //store arguments index in vector
@@ -1857,58 +1766,8 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
           vecArgIndex.push_back(i);
       //store local variable index in vector
       for (int i = 0; i <  temp_stack_last.allocas.size(); i++){
-            //printf("    MO_%d in allocas\n", i);
-            //printf("        counter = %d\n", temp_stack_last.allocas[i]->counter);
-            /*
-            std::string str_temp;
-            temp_stack_last.allocas[i]->getAllocInfo(str_temp);
-            printf("        getAllocInfo = : %s\n", str_temp.c_str());
-            printf("        id = %d\n", temp_stack_last.allocas[i]->id);
-            printf("        address = %d\n", temp_stack_last.allocas[i]->address);
-            printf("        size = %d\n", temp_stack_last.allocas[i]->size);
-            printf("        name = %s\n", temp_stack_last.allocas[i]->name.c_str());
-            printf("        isLocal = %d\n", temp_stack_last.allocas[i]->isLocal);
-            printf("        allocSite (register index) = %d\n", temp_stack_last.kf->numArgs + 1 + i);
-            */
             vecLocIndex.push_back(temp_stack_last.kf->numArgs + i);
-            //const Instruction *inst = dyn_cast<Instruction>(temp_stack_last.allocas[i]->allocSite);
-            //const AllocaInst *alloca = dyn_cast<AllocaInst>(&*inst);
-            //printf("        test = %s\n", alloca->getName().str().c_str());
       }
-      /*
-      printf("  sizeof(vecArgIndex) = %d\n", vecArgIndex.size());
-      for (auto i : vecArgIndex )
-        printf("        %d\t", i);
-      printf("\n");
-      printf("  sizeof(vecLocIndex) = %d\n", vecLocIndex.size());
-      for (auto i : vecLocIndex )
-        printf("        %d\t", i+1);
-      printf("\n");
-      printf("  locals : \n");
-      printf("      Arguments in locals\n");
-      for (auto i : vecArgIndex){
-        printf("        locals[%d].value.get().getKind() = %d\n", i, temp_stack_last.locals[i].value.get()->getKind());
-      }
-      printf("      Local variables in locals\n");
-      */
-      /*
-      for (auto i : vecLocIndex){
-        int kind = temp_stack_last.locals[i].value.get()->getKind();
-        //printf("        locals[%d].value.get().getKind() = %d\n", i+1, kind);
-        if (kind == 0){
-            ref<ConstantExpr> loc = toConstant(state, temp_stack_last.locals[i].value, "local variable in constant");
-            std::string res;
-            loc->toString(res);
-            //printf("        %s\n", res.c_str());
-            //printf("        %d\n", loc->getZExtValue());
-        }
-      }
-      */
-      //printf("      size = %s", temp_stack_last.locals[0].value->dump());
-      //printf("Here print the contents in getAddressInfo\n");
-      //ref<Expr> address = &state.stack[1].allocas[4]->address;
-      //std::string str_getAddressInfo = getAddressInfo(state, address);
-      //printf("  %s", str_getAddressInfo.c_str());
       state.popFrame();
 
       if (statsTracker)
@@ -1956,7 +1815,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
         }
       }
     }
-    //printf("\n");
     break;
   }
   case Instruction::Br: {
@@ -2198,13 +2056,8 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     CallSite cs(i);
 
     unsigned numArgs = cs.arg_size();
-    //printf("in case Instruction::Call numArgs = %d\n", numArgs);
     Value *fp = cs.getCalledValue();
-    //printf("in case Instruction::Call *fp data :\n");
-    //printf("    hasName() = %d\n", fp->hasName());
-    //printf("    getName() = %s\n", fp->getName().str().c_str());
     Function *f = getTargetFunction(fp, state);
-    //printf("in case Instruction::Call *f function name = %s\n", f->getName().str().c_str());
 
     if (isa<InlineAsm>(fp)) {
       terminateStateOnExecError(state, "inline assembly is unsupported");
@@ -2257,7 +2110,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
           i++;
         }
       }
-      //printf(" No.%d executeCall in if statement in Executor::executeInstruction executed! \n", numExecuteCall);
       executeCall(state, ki, f, arguments);
     } else { // call a not normal function?
       ref<Expr> v = eval(ki, 0, state).value;
@@ -2288,7 +2140,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
                                 "resolved symbolic function pointer to: %s",
                                 f->getName().data());
 
-            //printf("\n No.%d executeCall in else statement in Executor::executeInstruction executed! \n", numExecuteCall);
             executeCall(*res.first, ki, f, arguments);
           } else {
             if (!hasInvalid) {
@@ -2384,17 +2235,9 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   case Instruction::And: {
     ref<Expr> left = eval(ki, 0, state).value;
     ref<Expr> right = eval(ki, 1, state).value;
-    //if (left.get() != NULL && right.get() != NULL) {
     ref<Expr> result = AndExpr::create(left, right);
-    //result->dump();
     bindLocal(ki, state, result);
     break;
-    /*
-    }
-    else {
-        break;
-    }
-    */
   }
 
   case Instruction::Or: {
@@ -2548,7 +2391,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     // Memory instructions...
   case Instruction::Alloca: {//allocate memory for current function, a.k.a, local variable
     AllocaInst *ai = cast<AllocaInst>(i);
-    //printf("ai in Alloca = %s\n", ki->dest);
     unsigned elementSize =
       kmodule->targetData->getTypeStoreSize(ai->getAllocatedType());
     ref<Expr> size = Expr::createPointer(elementSize);
@@ -2581,8 +2423,6 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
         // now checking whether it is a use after free
         if (state.addressSpace.free_list.count(sym_name) != 0){
             llvm::errs() << "This symbolic is in the set!!!" << sym_name << "\n";
-            printf("THX : %s\n", sym_name.c_str());
-             //base->dump();
             terminateStateOnExecError(state, "memory error: a use(read) after free is detected!");
         }
     }
@@ -3235,7 +3075,6 @@ void Executor::doDumpStates() {
     for (int i = 0 ;i < state->addressSpace.FreeAddress.size(); i++){
         uint64_t* p = (uint64_t*)state->addressSpace.FreeAddress[i];
         free(p);
-        printf("free p ??? %p size = %d \n", p, state->addressSpace.FreeAddress.size());
     }
   }
   updateStates(nullptr);
@@ -3333,7 +3172,6 @@ void Executor::run(ExecutionState &initialState) {
     for (int i = 0 ;i < state.addressSpace.FreeAddress.size(); i++){
         uint64_t* p = (uint64_t*)state.addressSpace.FreeAddress[i];
         free(p);
-        printf("free p ??? %p size = %d \n", p, state.addressSpace.FreeAddress.size());
     }
     // Haoxin end for free memory
     updateStates(&state);
@@ -3353,7 +3191,6 @@ std::string Executor::getAddressInfo(ExecutionState &state,
   uint64_t example;
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(address)) {
     example = CE->getZExtValue();
-    //printf("example's value : %d\n", example);
   } else {
     ref<ConstantExpr> value;
     bool success = solver->getValue(state, address, value);
@@ -3792,7 +3629,6 @@ void Executor::executeAlloc(ExecutionState &state,
     if (allocationAlignment == 0) {
       allocationAlignment = getAllocationAlignment(allocSite);
     }
-    //printf("allocationAlignment in executeAlloc is %d\n", allocationAlignment);
     MemoryObject *mo =
         memory->allocate(CE->getZExtValue(), isLocal, /*isGlobal=*/false,
                          allocSite, allocationAlignment);
@@ -3808,7 +3644,6 @@ void Executor::executeAlloc(ExecutionState &state,
         os->initializeToRandom();
       }
       ref<ConstantExpr> temp = mo->getBaseExpr();
-      //printf("mo->getBaseExpr() in executeAlloc = %d\n", temp->getZExtValue());
       bindLocal(target, state, mo->getBaseExpr());
 
       if (reallocFrom) {
@@ -3916,7 +3751,6 @@ void Executor::executeAllocForMalloc(ExecutionState &state,
     if (allocationAlignment == 0) {
       allocationAlignment = getAllocationAlignment(allocSite);
     }
-    //printf("allocationAlignment in executeAllocForMalloc is %d\n", allocationAlignment);
     MemoryObject *mo_buffer =
         memory->allocateForMalloc(CE->getZExtValue(), isLocal, /*isGlobal=*/false,
                          allocSite, allocationAlignment, /*isMalloc*/true);
@@ -3925,7 +3759,6 @@ void Executor::executeAllocForMalloc(ExecutionState &state,
 
     if (sym_name.size() == 0 && mo_buffer!=0) {
       sym_name = "sym_" + std::to_string(mo_buffer->address);
-    //printf("symbolic malloc address name = %s\n", sym_name.c_str());
     //store buffer map
     ObjectState *os_buffer = new ObjectState(mo_buffer);
 
@@ -3936,14 +3769,12 @@ void Executor::executeAllocForMalloc(ExecutionState &state,
     ObjectPair mallocOp;
     mallocOp = std::make_pair(mo_buffer, os_buffer);
     ref<Expr> moMallocBufferAddress = ConstantExpr::create(mo_buffer->address, 64);
-    //printf("THX mo_buffer->address : %llu\n", mo_buffer);
     // create a symbolic (mo, os);
     unsigned id = 0;
     std::string uniqueName = sym_name;
     //while (!state.arrayNames.insert(uniqueName).second) {
     //    uniqueName = sym_name + "_" + llvm::utostr(++id);
     //}
-    //printf("symbolic malloc address name = %s\n", uniqueName.c_str());
     const Array *array = arrayCache.CreateArray(uniqueName, 8);
     mo_buffer->name = uniqueName;
     //no need new os
@@ -3954,7 +3785,6 @@ void Executor::executeAllocForMalloc(ExecutionState &state,
 
     
     // Deal with malloc location
-    //printf("+++++ malloc in %s : %u %u \n", target->info->file.c_str(), target->info->line, target->info->column);
     //std::vector<std::string> location;
     state.addressSpace.location.push_back(target->info->file);
     state.addressSpace.location.push_back(target->getSourceLocation());
@@ -3966,11 +3796,10 @@ void Executor::executeAllocForMalloc(ExecutionState &state,
     llvm::raw_string_ostream msg(MsgString);
     msg << "Stack for the malloc: \n";
     state.dumpStack(msg);
-    //state.addressSpace.location.push_back(msg.str());
+    //state.address space.location.push_back(msg.str());
     state.mallocLocation[sym_name].push_back(msg.str());
     //state.mallocLocation.insert(std::pair<std::string, std::vector<std::string>>(sym_name, state.addressSpace.location));
     //state.addressSpace.location.clear(); //do we need this?
-    //printf("=====size of mallocLocation = %d \n", state.mallocLocation.size());
     // get a symbolic Expr
     //ref<Expr> symExpr = os->read(0, Expr::Int64);
     ref<Expr> symExpr = ReadExpr::createTempRead(array, Expr::Int64);
@@ -3996,24 +3825,13 @@ void Executor::executeAllocForMalloc(ExecutionState &state,
     addConstraint(state, e2);
     */
     // here we add constraints to the symbol
-    //printf("bindLocal expr = \n");
-    //symExpr->dump();
     bindLocal(target, state, symExpr);
 
     state.addressSpace.mobjects.insert(std::pair<std::string, ObjectPair>(sym_name, mallocOp));
     MallocMemoryMap mmm = state.addressSpace.mobjects;
     } // end address checking
     else
-        //terminateStateEarly(state, "terminate this state because of the large malloc");
         terminateState(state);
-    //for (auto iter = mmm.begin(); iter != mmm.end(); iter++){
-        //ref<ConstantExpr> key = toConstant(state, iter->first, "key");
-        //printf("key = %d,\t", key->getZExtValue());
-        //printf("value = (mo-address= %d, os)\n", iter->second.first->address);
-        ;//printf("value = (mo->address= %d, os)\n", iter->second.first->address);
-    //}
-    //delete mo_temp;
-    //delete os;
   } else {
     // XXX For now we just pick a size. Ideally we would support
     // symbolic sizes fully but even if we don't it would be better to
@@ -4166,7 +3984,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                                       ref<Expr> value /* undef if read */,
                                       KInstruction *target /* undef if write */) {
   //target->inst->dump();
-    //printf("### start executeMemoryOperation ---\n");
     Expr::Width type = (isWrite ? value->getWidth() :
                      getWidthForLLVMType(target->inst->getType()));
   unsigned bytes = Expr::getMinBytesForWidth(type);
@@ -4199,14 +4016,11 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         iter_set = nameList.find(key);
         if (iter_set != nameList.end() && hasSymbolicMallocVariable(address, mmm)){
             sym_name = key;
-            //printf("\n 1 sym_name in find = %s\n", sym_name.c_str());
             isSymbolicAddress = 1;
         }
     }
     if (isSymbolicAddress && hasSymbolicMallocVariable(address, mmm)){ // handle symbolic address and aviod normal symbolic variable by comand
         std::map<std::string, ObjectPair> shared_map = state.addressSpace.mobjects;
-        //printf("This is a symbolic address, use our own strategy !\n");
-        //printf("sym_name = %s, Actual address to read/write is %llu\n", sym_name.c_str(), shared_map[sym_name].first->address);
         const MemoryObject *mo = shared_map[sym_name].first;
         ref<Expr> bufferAddress = ConstantExpr::create(shared_map[sym_name].first->address, 64);
         ref<Expr> address;// = toConstant(state, p_address, "cc");
@@ -4220,7 +4034,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
             // add getKind() to avoid complex Expr
             //if (!isa<ConstantExpr>(pp->getKid(i)) && hasSymbolicMallocVariable(pp->getKid(i), mmm))  {
             if (!isa<ConstantExpr>(pp->getKid(i)) && (pp->getKid(i)->getKind() == 3) || (pp->getKid(i)->getKind() == 5))  {
-                //printf("No.%d kid in p_address\n", i);
                 vec_kids.push_back(pp->getKid(i));
                 symbolicAddress = pp->getKid(i);
                 hasSymbolicAddress = 1;
@@ -4228,7 +4041,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
             }
         }
         int nu_size = vec_kids.size();
-        //printf("nu_size = %d\n", nu_size);
         ref<Expr> kids[nu_size];
         //if (vec_kids.size() == 2){
             for (int i=0; i < vec_kids.size(); i++){
@@ -4253,14 +4065,10 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         if (MaxSymArraySize && shared_map[sym_name].first->size >= MaxSymArraySize) {
             address = toConstant(state, address, "max-sym-array-size");
         }
-        //printf("THX address perfornming memory operation:\n");
         //address->dump();
         ref<Expr> offset = mo->getOffsetExpr(address);
         ref<Expr> check = mo->getBoundsCheckOffset(offset, bytes);
         check = optimizer.optimizeExpr(check, true);
-        //printf("THX offset: \n");
-        //offset->dump();
-        //check->dump();
         bool inBounds;
         solver->setTimeout(coreSolverTimeout);
         bool success = solver->mustBeTrue(state, check, inBounds);
@@ -4329,8 +4137,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
                 }
             } else {
                 ref<Expr> result = os->read(mo->getOffsetExpr(address), type);
-                //ref<ConstantExpr> tt = toConstant(state, result, "1");
-                //printf("result return from load inst = %d\n", tt->getZExtValue());
                 bindLocal(target, *bound, result);
             }
         }
@@ -4352,7 +4158,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         }
         //*/
         } else { // handle a normal symbolic variable
-            //printf("no map in share_map!\n");
 
             address = p_address;
             ObjectPair op;
@@ -4366,8 +4171,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
 
             if (success) {
                 const MemoryObject *mo = op.first;
-                //printf("address = %d, name = %s\n", mo->address, mo->name.c_str());
-
             if (MaxSymArraySize && mo->size >= MaxSymArraySize) {
                 address = toConstant(state, address, "max-sym-array-size");
             }
@@ -4465,8 +4268,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         }//end if for our own strategy
  else {
      // *Haoxin end
-     //printf("KLEE executeMemoryOperation !\n");
-
     //here is the normal operation in KLEE
     // fast path: single in-bounds resolution
 
@@ -4481,7 +4282,6 @@ void Executor::executeMemoryOperation(ExecutionState &state,
 
     if (success) {
         const MemoryObject *mo = op.first;
-        //printf("address = %d, name = %s\n", mo->address, mo->name.c_str());
 
     if (MaxSymArraySize && mo->size >= MaxSymArraySize) {
       address = toConstant(state, address, "max-sym-array-size");
@@ -4683,7 +4483,6 @@ void Executor::runFunctionAsMain(Function *f, //the initial execution function
   //save f to KFunction structure, to help KLEE deal with function more convenient
   // KFunction is defined in /klee/include/klee/Internal/Module/KModule.h
   KFunction *kf = kmodule->functionMap[f];
-  //printf("runFunctionAsMain *kf name : %s\n", kf->function->getName().str().c_str());
   assert(kf);
   // allocate memory for arguments and save them to the vector "argument"
   // Noted that the number of arguments should be no more than 3, why? whose arguments? KLEE main or test function main?
@@ -4724,9 +4523,7 @@ void Executor::runFunctionAsMain(Function *f, //the initial execution function
     statsTracker->framePushed(*state, 0);
 
   assert(arguments.size() == f->arg_size() && "wrong number of arguments");
-  //printf("f->arg_size() = %d\n", (int)arguments.size());
   for (unsigned i = 0, e = f->arg_size(); i != e; ++i){
-      //printf("Num.%d of arg_size()\n", i);
       bindArgument(kf, i, *state, arguments[i]);
   }
 
@@ -4854,7 +4651,6 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
     if (pi!=pie) break;
   }
 
-  //printf("Testing getSymbolicSolution function !\n");
   std::vector< std::vector<unsigned char> > values;
   std::vector<const Array*> objects;
   for (unsigned i = 0; i != state.symbolics.size(); ++i){
