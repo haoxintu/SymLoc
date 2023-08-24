@@ -419,8 +419,6 @@ void SpecialFunctionHandler::handleMalloc(ExecutionState &state,
   // This is the version needed "klee_make_malloc_symbolic" API
 
   //This is the version does not need API
-  //printf("Call handleMalloc here!\n");
-  //printf("file name = %s\n",target->info->file.c_str());
   /*
    * Perform new strategy here: randomly select symbolized malloc function
    * See how the results looks like
@@ -436,17 +434,15 @@ void SpecialFunctionHandler::handleMalloc(ExecutionState &state,
   if (file_name.size() != 0){
       if (file_name.find("runtime") != std::string::npos ){ //TODO simply exclude library
         isRuntimeLib = 1;
-        //printf("isRuntimeLib = %d\n", isRuntimeLib);
       }
       else if (file_name.find("libc/") != std::string::npos){ //TODO simply exclude library
         isRuntimeLib = 1;
       }else {
-        //printf("isRuntimeLib = %d\n", isRuntimeLib);
+	     ;
       }
   }
 
   if ((file_name.size() == 0 || isRuntimeLib == 0) && setSymMalloc == 1){
-    //printf("Call executeAllocForMalloc here!\n");
     std::string name = "";
     executor.executeAllocForMalloc(state, arguments[0], false, target, name);
   }
@@ -699,18 +695,13 @@ void SpecialFunctionHandler::handleErrnoLocation(
 //*Haoxin start
 //For find the special symbolic array
 const Array* scan22(ref<Expr> e, std::set<std::string> &symNameList) {
-    //std::set<std::string> symNameList;
     const Array *array;
     Expr *ep = e.get();
-    //ep->dump();
         for (unsigned i=0; i<ep->getNumKids(); i++)
           scan22(ep->getKid(i), symNameList);
         if (const ReadExpr *re = dyn_cast<ReadExpr>(e)) {
-          //printf("In execution array->name = %s\n", re->updates.root->name.c_str());
           symNameList.insert(re->updates.root->name);
           array = re->updates.root;
-          //break;
-          //re->dump();
         }
         return array;
 }
@@ -755,7 +746,6 @@ void SpecialFunctionHandler::handleCalloc(ExecutionState &state,
         const MemoryObject *mo = shared_map[sym_name].first;
         //Not free here, if everything is done, then free all buffers in moMallocBufferAddress
         state.addressSpace.mobjects.erase(sym_name);
-        //free(p); // free the symbolic buffer
         address = ConstantExpr::create(mo->address, 64);
         ref<Expr> size = MulExpr::create(address,
                                    arguments[1]);
@@ -763,7 +753,6 @@ void SpecialFunctionHandler::handleCalloc(ExecutionState &state,
     }
     else { //handle a normal symbolic variable, should be an error
         klee_warning("memory error: calloc from a symbolic address");
-        //printf("error, this symbolic address is not on MallocMemoryMap!\n");
     }
   }
 }
@@ -859,7 +848,6 @@ void SpecialFunctionHandler::handleRealloc(ExecutionState &state,
     }
     else { //handle a normal symbolic variable, should be an error
         klee_warning("memory error: realloc from a symbolic address");
-        //printf("error, this symbolic address is not on MallocMemoryMap!\n");
     }
     // *Haoxin end
   }
@@ -910,17 +898,14 @@ void SpecialFunctionHandler::handleFree(ExecutionState &state,
             const MemoryObject *mo = shared_map[sym_name].first;
             msg << "Stack for the second free for sym_name : " << sym_name << "address to be freed: " << mo->address << "\n";
             state.dumpStack(msg);
-            //llvm::errs() << "sym_name : \n" << sym_name << "\n" <<  msg.str();
             state.mallocLocation[sym_name].push_back(msg.str());
             executor.terminateStateOnError(state, "a doube free bug is detected!", Executor::User);
         }
         std::map<std::string, ObjectPair> shared_map = state.addressSpace.mobjects;
         const MemoryObject *mo = shared_map[sym_name].first;
         //Not free here, if everything is done, then free all buffers in moMallocBufferAddress
-        //free(p); // free the symbolic buffer
         address = ConstantExpr::create(mo->address, 64);
         uint64_t *p = (uint64_t*)mo->address;
-        //llvm::errs() << "freed symbolic variable name : " << sym_name;
         // TODO Also can add double free detection here
         state.addressSpace.free_list.insert(sym_name);
         // add stacktrace
@@ -928,13 +913,10 @@ void SpecialFunctionHandler::handleFree(ExecutionState &state,
         llvm::raw_string_ostream msg(MsgString);
         msg << "Stack for the first free for sym_name : " << sym_name << "address to be freed : " << mo->address << "\n";
         state.dumpStack(msg);
-        //llvm::errs() << "sym_name : \n" << sym_name << "\n" <<  msg.str();
-        //state.addressSpace.location.push_back(msg.str());
         state.mallocLocation[sym_name].push_back(msg.str());
     }
     else { //handle a normal symbolic variable, should be an error
         klee_warning("memory error: free from a symbolic address");
-        //printf("error, this symbolic address is not on MallocMemoryMap!\n");
     }
   }
   // *Haoxin end
@@ -962,15 +944,12 @@ void SpecialFunctionHandler::handleCheckMemoryAccess(ExecutionState &state,
 				   Executor::User);
   } else {
     ObjectPair op;
-    //18446744073709547521
-    //72340172838076673
     if (cast<ConstantExpr>(address)->getZExtValue() >= 18446744073709547521 ||cast<ConstantExpr>(address)->getZExtValue() == 72340172838076673 ||
     //if (cast<ConstantExpr>(address)->getZExtValue() == 72340172838076673){
            cast<ConstantExpr>(address)->getZExtValue() == 0) {
         return;
    }
     if (!state.addressSpace.resolveOne(cast<ConstantExpr>(address), op) ) {
-      //address->dump();
       for (auto m : state.addressSpace.mobjects){
       //address->dump();
         printf("\naddress in mobject : %p\n", m.second.first->address);
@@ -1047,7 +1026,6 @@ void SpecialFunctionHandler::handleMakeSymbolic(ExecutionState &state,
 
   for (Executor::ExactResolutionList::iterator it = rl.begin(),
          ie = rl.end(); it != ie; ++it) {
-    //printf("rl for loop\n");
     const MemoryObject *mo = it->first.first;
     mo->setName(name);
 
@@ -1085,14 +1063,12 @@ void SpecialFunctionHandler::handleMakeMallocSymbolic(ExecutionState &state,
                                                 KInstruction *target,
                                                 std::vector<ref<Expr> > &arguments) {
     //the only thing does this function do is to pass the arguments to handleMalloc function
-    //printf("calls klee_make_malloc_symbolic here, but did nothing!\n");
     //check for arguments
     if (arguments.size() != 1){
         executor.terminateStateOnError(state, "Incorrect number of arguments to klee_make_malloc_symbolic(char*)", Executor::User);
         return;
     }
     argumentsFromUser = arguments;
-    //printf("size of arguments is %d\n", arguments.size());
     return ;
 }
 // *Haoxin end
