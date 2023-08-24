@@ -77,16 +77,19 @@ make
 ### Our Tool
 To build our tool, do the following:
 ```
-mkdir <klee_ram_build_dir>
-cd <klee_ram_build_dir>
-    cmake \
+git clone https://github.com/haoxintu/SymLoc
+cd SymLoc
+mkdir build-symloc
+cd build-symloc
+cmake \
     -DENABLE_SOLVER_STP=ON \
     -DENABLE_POSIX_RUNTIME=ON \
     -DENABLE_KLEE_UCLIBC=ON \
     -DKLEE_UCLIBC_PATH=<klee_uclibc_dir> \
     -DLLVM_CONFIG_BINARY=<llvm_build_dir>/bin/llvm-config \
     -DLLVMCC=<llvm_build_dir>/bin/clang \
-    -DLLVMCXX=<llvm_build_dir>/bin/clang++ \
-    <symloc_dir>
+    -DLLVMCXX=<llvm_build_dir>/bin/clang++
 make -j4
 ```
+
+After this, you could find the executable `symloc` inside `build-symloc/bin`.
