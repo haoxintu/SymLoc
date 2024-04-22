@@ -1,4 +1,4 @@
-## Replication package used in the paper "Concretely Mapped Symbolic Memory Locations for Memory Error Detection", Accepted in IEEE Transactions on Software Engineering. [[PDF]](https://haoxintu.github.io/files/SymLoc_TSE2024_Just_Accepted.pdf)
+## Replication package used in the paper "Concretely Mapped Symbolic Memory Locations for Memory Error Detection", Accepted by IEEE Transactions on Software Engineering. [[PDF]](https://haoxintu.github.io/files/SymLoc_TSE2024_Just_Accepted.pdf)
 
 ## This repository includes two parts:
 
