@@ -95,3 +95,15 @@ make -j4
 ```
 
 After this, you could find the executable `symloc` inside `build-symloc/bin`.
+
+## Citation
+```
+@article{tu2024concretely,
+  title={{Concretely Mapped Symbolic Memory Locations for Memory Error Detection}},
+  author={Tu, Haoxin and Jiang, Lingxiao and Hong, Jiaqi and Ding, Xuhua and Jiang, He},
+  journal={IEEE Transactions on Software Engineering},
+  year={2024},
+  pages = {1--21},
+  publisher={IEEE}
+}
+```
